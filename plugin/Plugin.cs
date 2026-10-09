@@ -35,7 +35,7 @@ namespace FHRelevel
     {
         public const string PluginGuid = "bishi.fh.relevel";
         public const string PluginName = "FH Relevel 重新升级";
-        public const string PluginVersion = "1.6.2";
+        public const string PluginVersion = "1.6.3";
 
         internal static FHRelevelPlugin Instance;
         internal ManualLogSource _log;
@@ -213,6 +213,7 @@ namespace FHRelevel
 
         private static System.Collections.IEnumerator DriverCoroutine()
         {
+            float nextTick = 0f;
             while (true)
             {
                 yield return null;
@@ -229,7 +230,12 @@ namespace FHRelevel
                                 Probe("战役状态已可用（协程视角）");
                             }
                             RelevelUi.EnsureUi();
-                            RelevelUi.Instance.Tick(Time.realtimeSinceStartup);
+                            var now = Time.realtimeSinceStartup;
+                            if (now >= nextTick)
+                            {
+                                nextTick = now + 0.1f;
+                                RelevelUi.Instance.Tick(now);
+                            }
                         }
                     }
                 }
@@ -625,6 +631,7 @@ namespace FHRelevel
         private float _autoShowUntil = -1f;
         private NewCardsListModule _newCardsModule;
         private float _lastCardsVisible = -999f;
+        private float _nextModuleScan;
         private string _lastStatus = "";
 
         internal void ToggleForTest()
@@ -799,8 +806,12 @@ namespace FHRelevel
             bool cardsVisible = false;
             try
             {
-                if (_newCardsModule == null)
+                // 性能关键：FindObjectOfType 全场景扫描，限频 2 秒一次，且战斗中该界面必然不存在、直接跳过
+                if (_newCardsModule == null && t >= _nextModuleScan && !FHRelevelPlugin.InScenario(gs))
+                {
+                    _nextModuleScan = t + 2f;
                     _newCardsModule = UnityEngine.Object.FindObjectOfType<NewCardsListModule>();
+                }
                 if (_newCardsModule != null)
                 {
                     cardsVisible = _newCardsModule.gameObject.activeInHierarchy;
