@@ -35,7 +35,7 @@ namespace FHRelevel
     {
         public const string PluginGuid = "bishi.fh.relevel";
         public const string PluginName = "FH Relevel 重新升级";
-        public const string PluginVersion = "1.6.1";
+        public const string PluginVersion = "1.6.2";
 
         internal static FHRelevelPlugin Instance;
         internal ManualLogSource _log;
@@ -345,7 +345,8 @@ namespace FHRelevel
 
         internal static FHMapChoreographer Choreo()
         {
-            try { return Singleton<FHMapChoreographer>.Instance; }
+            // InstanceFast：找不到时静默返回 null（Instance 会刷游戏警告+全场景扫描）
+            try { return Singleton<FHMapChoreographer>.InstanceFast; }
             catch (Exception e)
             {
                 if (!_probedChoreoEx) { _probedChoreoEx = true; Probe("Choreo 异常: " + e.GetType().Name + " " + e.Message); }
