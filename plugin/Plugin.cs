@@ -35,7 +35,7 @@ namespace FHRelevel
     {
         public const string PluginGuid = "bishi.fh.relevel";
         public const string PluginName = "FH Relevel 重新升级";
-        public const string PluginVersion = "1.6.3";
+        public const string PluginVersion = "1.6.4";
 
         internal static FHRelevelPlugin Instance;
         internal ManualLogSource _log;
@@ -133,6 +133,7 @@ namespace FHRelevel
         private static float _nextCanvasPump;
         private static float _nextCanvasErrProbe;
         private static float _nextCsProbe;
+        private static float _nextReqCheck;
 
         private static float _canvasEventCount;
         private static bool _deepDiagnosed;
@@ -167,7 +168,8 @@ namespace FHRelevel
                         _probedChoreoReady = true;
                         Probe("Choreo 就绪（每帧泵视角）");
                     }
-                    Probe($"泵心跳 事件数={(_canvasEventCount > 100000 ? 99999 : (int)_canvasEventCount)} Choreo={(chx != null ? "有" : "无")} 战役={(gsx != null ? "有" : "无")} 键盘={(kb ? "有" : "无")} 面板={(RelevelUi.Instance != null ? (RelevelUi.Instance.PanelOpen ? "开" : "关") : "未建")}");
+                    bool inScen = FHRelevelPlugin.InScenario(gsx);
+                    Probe($"泵心跳 事件数={(_canvasEventCount > 100000 ? 99999 : (int)_canvasEventCount)} Choreo={(chx != null ? "有" : "无")} 战役={(gsx != null ? "有" : "无")} 场景中={(inScen ? "是" : "否")} 键盘={(kb ? "有" : "无")} 面板={(RelevelUi.Instance != null ? (RelevelUi.Instance.PanelOpen ? "开" : "关") : "未建")}");
                 }
                 if (!ReferenceEquals(Instance, null))
                 {
@@ -179,22 +181,26 @@ namespace FHRelevel
                     try { Housekeeping(false); }
                     catch (Exception e2) { Probe("CS: Housekeeping 抛出 " + e2.GetType().Name + " " + e2.Message); }
                 }
-                try
+                if (t >= _nextReqCheck)
                 {
-                    var reqDir = DataDir;
-                    if (reqDir != null && System.IO.File.Exists(System.IO.Path.Combine(reqDir, "panel.request")))
+                    _nextReqCheck = t + 0.5f;
+                    try
                     {
-                        System.IO.File.Delete(System.IO.Path.Combine(reqDir, "panel.request"));
-                        if (RelevelUi.Instance != null) RelevelUi.Instance.ToggleForTest();
-                        Probe("panel.request 已处理");
+                        var reqDir = DataDir;
+                        if (reqDir != null && System.IO.File.Exists(System.IO.Path.Combine(reqDir, "panel.request")))
+                        {
+                            System.IO.File.Delete(System.IO.Path.Combine(reqDir, "panel.request"));
+                            if (RelevelUi.Instance != null) RelevelUi.Instance.ToggleForTest();
+                            Probe("panel.request 已处理");
+                        }
+                        if (reqDir != null && System.IO.File.Exists(System.IO.Path.Combine(reqDir, "uidump.request")))
+                        {
+                            System.IO.File.Delete(System.IO.Path.Combine(reqDir, "uidump.request"));
+                            DumpUi();
+                        }
                     }
-                    if (reqDir != null && System.IO.File.Exists(System.IO.Path.Combine(reqDir, "uidump.request")))
-                    {
-                        System.IO.File.Delete(System.IO.Path.Combine(reqDir, "uidump.request"));
-                        DumpUi();
-                    }
+                    catch { }
                 }
-                catch { }
             }
             catch (Exception e)
             {
@@ -809,7 +815,7 @@ namespace FHRelevel
                 // 性能关键：FindObjectOfType 全场景扫描，限频 2 秒一次，且战斗中该界面必然不存在、直接跳过
                 if (_newCardsModule == null && t >= _nextModuleScan && !FHRelevelPlugin.InScenario(gs))
                 {
-                    _nextModuleScan = t + 2f;
+                    _nextModuleScan = t + 5f;
                     _newCardsModule = UnityEngine.Object.FindObjectOfType<NewCardsListModule>();
                 }
                 if (_newCardsModule != null)
