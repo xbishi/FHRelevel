@@ -63,7 +63,8 @@ dotnet build -c Release -p:GameDir="C:\Program Files (x86)\Steam\steamapps\commo
 - **按钮/面板没出现**：确认已进入战役（前哨或大地图），战斗场景中功能禁用。
 - **诊断日志**：`%USERPROFILE%\AppData\LocalLow\Snapshot Games Inc\Frosthaven\FHRelevel\probe.log`
   记录了插件全程运行状态，报 issue 时请附上。
-- **改热键**：游戏目录 `BepInEx\config\bishi.fh.relevel.cfg`。
+- **按 F8 没反应但 F9 可以**：F8 可能被游戏本体、显卡驱动或覆盖层软件占用，直接用 F9（长按半秒）。
+- **改热键**：游戏目录 `BepInEx\config\bishi.fh.relevel.cfg`，把 `Hotkey = F8` 改成想要的键（如 F6），保存后重启游戏。
 
 ## 免责声明
 
